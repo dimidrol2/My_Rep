@@ -1,27 +1,49 @@
-word = input()
-array = []
-bool_array = [True for i in range(len(word))]
-diff = 96
+# This is a sample Python script.
 
-for i in range(len(word)-1, -1, -1):
-    if bool_array[i] == False:
-        continue
-    if word[i] == '#':
-        array += [word[i-2]+word[i-1]]
-        bool_array[i] = False
-        bool_array[i-1] = False
-        bool_array[i-2] = False
-    else:
-        array += [word[i]]
+# Press Shift+F10 to execute it or replace it with your code.
+# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import cv2,numpy
+from PIL import ImageGrab
+import pyautogui
+import keyboard
+import msvcrt
+from PIL import ImageGrab
+import time
 
-
-for i in range(len(array)):
-    array[i] = chr(int(array[i])+diff)
-array = array[::-1]
-new_word = ''
-for i in array:
-    new_word += i
-
-print(new_word)
+def wait():
+    while True:
+        if keyboard.is_pressed('enter'):
+            return pyautogui.position()
 
 
+
+
+# Press the green button in the gutter to run the script.
+if __name__ == '__main__':
+    array = [0]
+    x0,y0 = wait()
+    time.sleep(0.1)
+    #print(x0,y0)
+    x1, y1 = wait()
+    #print(x1,y1)
+    screen = ImageGrab.grab()
+    for i in range(3000):
+        tmp = ImageGrab.grab(bbox=(x1 - 15,y1 - 15,x1 + 15, y1 + 15))
+        mean = numpy.mean(tmp)
+        diff = array[-1] - mean
+        array.append(mean)
+        print(diff)
+        if diff >=2:
+            pyautogui.click()
+            pyautogui.mouseDown()
+            time.sleep(2)
+            break
+
+    screen.save('screen.png')
+    tmp.save('template.png')
+
+
+
+
+
+# See PyCharm help at https://www.jetbrains.com/help/pycharm/
