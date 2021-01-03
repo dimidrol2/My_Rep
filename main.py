@@ -12,6 +12,7 @@ import keyboard
 
 tmp = "template.png"
 Hotkey = 'enter'
+bool_repeat = False
 
 
 def ret_side(x, y):
@@ -19,11 +20,11 @@ def ret_side(x, y):
     x1 = 1920 / 2
     x2 = 1080 / 2
 
-    side = '_left'
+    side = 'template_lefthg.png'
     if x1 > x:
-        side = 'template_left.png'
+        side = 'template_lefthg.png'
     elif x1 < x:
-        side = 'template_right.png'
+        side = 'template_righthg.png'
     return side
 
 
@@ -47,6 +48,7 @@ def make_screen():
 
 
 def find_hook(tmp):
+    #print('Ищу крючок!')
     array = [0]
 
     image = cv2.imread('screen.png')
@@ -57,17 +59,27 @@ def find_hook(tmp):
     
     res = cv2.matchTemplate(rgb_image, rgb_template, cv2.TM_CCOEFF_NORMED)
 
-    loc = numpy.where(res >= 0.6)
+    loc = numpy.where(res >= 0.7)
     x = y = 1
     for pt in zip(*loc[::-1]):
         x = int(pt[0])
         y = int(pt[1])
-    print(x,y)
+        #print('Нашел')
+        break
+
+    if x == y == 1:
+        bool_repeat = True
+        #print('Не нашел')
+        return
+
+
     for i in range(1000):
         clean_screen = ImageGrab.grab(bbox=(x, y, x + h, y + w))
+        clean_screen.save('clean_screen.png')
 
         mean = numpy.mean(clean_screen)
         diff = array[-1] - mean
+
 
 
         array.append(mean)
@@ -80,6 +92,7 @@ def find_hook(tmp):
 
 
 def catch():
+    #print('начинаю ловить')
     x, y = (840,540) , (940,565)
     clean_screen = ImageGrab.grab(bbox = (*x, *y))
     clean_screen.save("Catch.png")
@@ -87,24 +100,26 @@ def catch():
     array = [numpy.mean(clean_screen)]
     pyautogui.moveTo(1000, 555)
     for i in range(100):
-        time.sleep(0.1)
+        time.sleep(0.05)
         dif_screen = ImageGrab.grab(bbox=(*x, *y))
         mean = numpy.mean(dif_screen)
         diff = abs(array[0] - mean)
+
+
 
         if diff >=3:
             pyautogui.mouseDown(button= 'left')
         else:
             pyautogui.mouseUp(button= 'left')
-        if diff >= 10:
+            #print('отпускаю леску')
+        if diff >= 20:
             pyautogui.mouseUp(button='left')
             break
-
 
 def throw_a_hook():
 
     pyautogui.mouseDown(button='left')
-    time.sleep(0.05)
+    time.sleep(0.25)
     pyautogui.mouseUp(button='left')
 
 
@@ -125,7 +140,9 @@ if __name__ == '__main__':
     tmp = ret_side(x, y)
 
 
+
     while True:
+        bool_repeat = False
 
         throw_a_hook()
 
@@ -133,12 +150,16 @@ if __name__ == '__main__':
         make_screen()
 
         find_hook(tmp)
+        if bool_repeat:
+            continue
 
         time.sleep(0.2)
         catch()
 
         time.sleep(2)
         move_to_begin(x, y)
+        if keyboard.is_pressed(Hotkey):
+            break
 
         time.sleep(0.2)
 
