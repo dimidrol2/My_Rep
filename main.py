@@ -13,23 +13,9 @@ import keyboard
 tmp = "template.png"
 Hotkey = 'enter'
 bool_repeat = False
-
-
-def ret_side(x, y):
-
-    x1 = 1920 / 2
-    x2 = 1080 / 2
-
-    side = 'template_lefthg.png'
-    if x1 > x:
-        side = 'template_lefthg.png'
-    elif x1 < x:
-        side = 'template_righthg.png'
-    return side
-
-
-
-
+size_screen = pyautogui.size()
+pyautogui.FAILSAFE = True
+#x 700 , y 450 # 200x25
 
 
 def timer(f):
@@ -47,124 +33,83 @@ def make_screen():
     base_screen.save("screen.png")
 
 
-def find_hook(tmp):
-    #print('Ищу крючок!')
-    array = [0]
-
-    image = cv2.imread('screen.png')
-    template = cv2.imread(tmp)
-    w, h, z = template.shape[::1]
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    rgb_template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-    
-    res = cv2.matchTemplate(rgb_image, rgb_template, cv2.TM_CCOEFF_NORMED)
-
-    loc = numpy.where(res >= 0.7)
-    x = y = 1
-    for pt in zip(*loc[::-1]):
-        x = int(pt[0])
-        y = int(pt[1])
-        #print('Нашел')
-        break
-
-    if x == y == 1:
-        bool_repeat = True
-        #print('Не нашел')
-        return
-
-
-    for i in range(1000):
-        clean_screen = ImageGrab.grab(bbox=(x, y, x + h, y + w))
-        clean_screen.save('clean_screen.png')
-
-        mean = numpy.mean(clean_screen)
-        diff = array[-1] - mean
-
-
-
-        array.append(mean)
-        time.sleep(0.1)
-        if diff >= 4:
-            pyautogui.click()
-
-
-            break
-
-
 def catch():
-    #print('начинаю ловить')
-    x, y = (840,540) , (940,565)
-    clean_screen = ImageGrab.grab(bbox = (*x, *y))
+    #print('начал играть')
+    if size_screen==(1600,900):
+        x0, y0 = (700, 450), (785, 470)
+    elif size_screen == (1920,1080):
+        x0, y0 = (840, 540), (940, 565)
+
+    clean_screen = ImageGrab.grab(bbox = (*x0, *y0))
     clean_screen.save("Catch.png")
 
     array = [numpy.mean(clean_screen)]
-    pyautogui.moveTo(1000, 555)
-    for i in range(100):
+
+    for i in range(1000):
         time.sleep(0.05)
-        dif_screen = ImageGrab.grab(bbox=(*x, *y))
+        dif_screen = ImageGrab.grab(bbox=(*x0, *y0))
         mean = numpy.mean(dif_screen)
         diff = abs(array[0] - mean)
 
-
-
-        if diff >=3:
+        if diff >= 2:
             pyautogui.mouseDown(button= 'left')
         else:
             pyautogui.mouseUp(button= 'left')
-            #print('отпускаю леску')
+
         if diff >= 20:
             pyautogui.mouseUp(button='left')
+            #print('закончил играть diff=', diff)
             break
 
-def throw_a_hook():
 
-    pyautogui.mouseDown(button='left')
-    time.sleep(0.25)
-    pyautogui.mouseUp(button='left')
-
-
-def move_to_begin(x, y):
+def throw_a_hook(x, y):
     pyautogui.moveTo(x, y)
+    pyautogui.mouseDown(button='left')
+    time.sleep(1)
+    pyautogui.mouseUp(button='left')
+    #print('закинул удочку на ', x, y)
 
 
 def wait():
-    while True:
-        if keyboard.is_pressed('Enter'):
+    keyboard.wait('l')
+    return pyautogui.position()
+
+
+def click_on_hook(x, y):
+    r = 15
+    array = [0]
+    for i in range(1000):
+
+        clean_screen = ImageGrab.grab(bbox=(x-r, y - r, x + r, y + r))
+        #clean_screen.save('clean_screen.png')
+
+        mean = numpy.mean(clean_screen)
+        diff = array[-1] - mean
+        array.append(mean)
+        time.sleep(0.1)
+
+        if diff >= 4:
+            #print('нажал на крючок', diff)
+            pyautogui.click()
             break
 
 
 if __name__ == '__main__':
+    count = 1
 
+    coord0 = wait()
+    coord1 = wait()
     wait()
-    x, y = pyautogui.position()
-    tmp = ret_side(x, y)
-
-
+    time.sleep(0.1)
 
     while True:
+        
+        print(count)
         bool_repeat = False
-
-        throw_a_hook()
-
-        time.sleep(1)
-        make_screen()
-
-        find_hook(tmp)
-        if bool_repeat:
-            continue
-
+        throw_a_hook(*coord0)
+        time.sleep(1.5)
+        click_on_hook(*coord1)
         time.sleep(0.2)
         catch()
-
         time.sleep(2)
-        move_to_begin(x, y)
-        if keyboard.is_pressed(Hotkey):
-            break
-
-        time.sleep(0.2)
-
-
-
-
-
-
+        count+=1
