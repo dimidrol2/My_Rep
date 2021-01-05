@@ -49,6 +49,7 @@ def timer(f):
 def catch():
     clean_screen = ImageGrab.grab(bbox=(*x0, *y0))
     right_screen = ImageGrab.grab(bbox=(*x1, *y1))
+    full_screen = ImageGrab.grab(bb
 
 
     clean_screen.save("left_side.png")
@@ -142,3 +143,38 @@ if __name__ == '__main__':
         catch()
         time.sleep(2)
         count+=1
+                                 
+                                 ///
+def catch():
+    clean_screen = ImageGrab.grab(bbox=(*x0, *y0))
+    right_screen = ImageGrab.grab(bbox=(*x1, *y1))
+    full_screen = ImageGrab.grab(bbox=(*x0,*y1))
+    array_full = [numpy.mean(full_screen)]
+
+    full_screen.save("full_side.png")
+    right_screen.save("right_side.png")
+
+    array_right = [numpy.mean(right_screen)]
+    
+    
+
+    for i in range(1000):
+        time.sleep(0.05)
+        f_screen = ImageGrab.grab(bbox=(*x0, *y1))
+        r_screen = ImageGrab.grab(bbox=(*x1, *y1))
+        mean_f = numpy.mean(f_screen)
+        mean_r = numpy.mean(r_screen)
+        
+        diff_r = abs(array_right[0] - mean_r)
+        diff_f = abs(array_full[-1] - mean_f)
+        
+        if diff_f < 0.01:
+            break
+        if diff_r <= 1:
+            pyautogui.mouseDown(button='left')
+
+        elif diff_r >= 20:
+            pyautogui.mouseUp(button='left')
+            break
+        else:
+            pyautogui.mouseUp(button='left')
