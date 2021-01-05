@@ -113,9 +113,9 @@ def click_on_hook(x, y):
         diff = array[-1] - mean
         array.append(mean)
         time.sleep(0.1)
+        print(diff)
 
-        if diff >= 10:
-            #print('нажал на крючок', diff)
+        if diff >= 10:            
             dif_mean = numpy.mean(ImageGrab.grab(bbox=(*x1, *y1)))
             pyautogui.click()
             break
