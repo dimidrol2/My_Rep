@@ -1,10 +1,7 @@
 # This is a sample Python script.
 import pyautogui
 import time
-import cv2
 import numpy
-
-
 from PIL import ImageGrab
 import keyboard
 # Press Shift+F10 to execute it or replace it with your code.ы
@@ -13,7 +10,7 @@ import keyboard
 bool_repeat = False
 size_screen = pyautogui.size()
 pyautogui.FAILSAFE = True
-dif_mean = 0
+
 #x 700 , y 450 # 200x25
 if size_screen == (1600, 900):
     x0, y0 = (700, 450), (785, 470)
@@ -26,13 +23,6 @@ else:
     x1, y1 = (1015, 540), (1080, 565)
 
 
-def no_catch(x, y):
-    if abs(x - y) > 20:
-        return False
-    else:
-        return True
-
-
 def timer(f):
     def tmp(*args, **kwargs):
         t = time.time()
@@ -43,31 +33,27 @@ def timer(f):
     return tmp
 
 
-
-
-
 def catch():
     clean_screen = ImageGrab.grab(bbox=(*x0, *y0))
     right_screen = ImageGrab.grab(bbox=(*x1, *y1))
-    full_screen = ImageGrab.grab(bb
+    full_screen = ImageGrab.grab(bbox=(*x0, *y1))
+    array_full = [numpy.mean(full_screen)]
 
-
-    clean_screen.save("left_side.png")
-    right_screen.save("right_side.png")
+    #full_screen.save("full_side.png")
+    #right_screen.save("right_side.png")
 
     array_right = [numpy.mean(right_screen)]
-    if no_catch(dif_mean, array_right[-1]):
-        return
-    #array = [numpy.mean(clean_screen)]
-
+    
     for i in range(1000):
         time.sleep(0.05)
-        #l_screen = ImageGrab.grab(bbox=(*x0, *y0))
+        f_screen = ImageGrab.grab(bbox=(*x0, *y1))
         r_screen = ImageGrab.grab(bbox=(*x1, *y1))
-        #mean_l = numpy.mean(l_screen)
+        mean_f = numpy.mean(f_screen)
         mean_r = numpy.mean(r_screen)
-        #diff_l = abs(array[0] - mean_l)
+
         diff_r = abs(array_right[0] - mean_r)
+        diff_f = abs(array_full[-1] - mean_f)
+
 
         if diff_r <= 1:
             pyautogui.mouseDown(button='left')
@@ -78,27 +64,17 @@ def catch():
         else:
             pyautogui.mouseUp(button='left')
 
-        '''if diff_l >= 2:
-            pyautogui.mouseDown(button= 'left')
-        else:
-            pyautogui.mouseUp(button= 'left')
-
-        if diff_l >= 20:
-            pyautogui.mouseUp(button='left')
-            #print('закончил играть diff=', diff)
-            break'''
-
 
 def throw_a_hook(x, y):
     pyautogui.moveTo(x, y)
     pyautogui.mouseDown(button='left')
     time.sleep(1)
     pyautogui.mouseUp(button='left')
-    #print('закинул удочку на ', x, y)
 
 
 def wait():
-    keyboard.wait('l')
+    telega = keyboard.wait('l')
+    
     return pyautogui.position()
 
 
@@ -110,22 +86,33 @@ def click_on_hook(x, y):
         clean_screen = ImageGrab.grab(bbox=(x-r, y - r, x + r, y + r))
         #clean_screen.save('clean_screen.png')
 
+
         mean = numpy.mean(clean_screen)
         diff = array[-1] - mean
         array.append(mean)
-        time.sleep(0.1)
-        print(diff)
+        #print(diff)
 
-        if diff >= 10:            
-            dif_mean = numpy.mean(ImageGrab.grab(bbox=(*x1, *y1)))
+
+        if diff >= 5:
+            #print('нажал на крючок', diff)
+
             pyautogui.click()
             break
+        time.sleep(0.1)
 
+
+def s():
+    x = ImageGrab.grab(bbox=(*x0, *y0))
+    print()
+    return
+
+
+def r(x):
+    return round(x, 3)
 
 if __name__ == '__main__':
     count = 1
     coord0 = wait()
-    
     coord1 = wait()
 
     wait()
@@ -133,7 +120,6 @@ if __name__ == '__main__':
     time.sleep(0.1)
 
     while True:
-
         print(count)
         bool_repeat = False
         throw_a_hook(*coord0)
@@ -143,38 +129,3 @@ if __name__ == '__main__':
         catch()
         time.sleep(2)
         count+=1
-                                 
-                                 ///
-def catch():
-    clean_screen = ImageGrab.grab(bbox=(*x0, *y0))
-    right_screen = ImageGrab.grab(bbox=(*x1, *y1))
-    full_screen = ImageGrab.grab(bbox=(*x0,*y1))
-    array_full = [numpy.mean(full_screen)]
-
-    full_screen.save("full_side.png")
-    right_screen.save("right_side.png")
-
-    array_right = [numpy.mean(right_screen)]
-    
-    
-
-    for i in range(1000):
-        time.sleep(0.05)
-        f_screen = ImageGrab.grab(bbox=(*x0, *y1))
-        r_screen = ImageGrab.grab(bbox=(*x1, *y1))
-        mean_f = numpy.mean(f_screen)
-        mean_r = numpy.mean(r_screen)
-        
-        diff_r = abs(array_right[0] - mean_r)
-        diff_f = abs(array_full[-1] - mean_f)
-        
-        if diff_f < 0.01:
-            break
-        if diff_r <= 1:
-            pyautogui.mouseDown(button='left')
-
-        elif diff_r >= 20:
-            pyautogui.mouseUp(button='left')
-            break
-        else:
-            pyautogui.mouseUp(button='left')
