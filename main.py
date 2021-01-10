@@ -34,17 +34,11 @@ key_array = ['\t', '\n', '\r', ' ', '!', '"', '#', '$', '%', '&', "'", '(',
              'command', 'option', 'optionleft', 'optionright']
 # Press Shift+F10 to execute it or replace it with your code.ы
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-hook_rad = 13
-time_eat = 30
-time_bait = 10
-eat, bait = False, False
-wait_eat , wait_bait = 0, 0
-key_eating, key_bait = 'f2', 'f1'
+
 
 size_screen = pyautogui.size()
-count = 1
-i_click = 5
-#stop = False
+
+
 Form, _ = uic.loadUiType('interface.ui')
 # x 700 , y 450 # 200x25
 if size_screen == (1600, 900):
@@ -57,6 +51,166 @@ else:
     x0, y0 = (840, 539), (1080, 569)
 
 
+class Game(QtCore.QObject):
+    def __init__(self):
+        super().__init__()
+        self.stop = False
+        self.hook_rad = 13
+        self.time_eat = 30
+        self.time_bait = 10
+        self.eat, self.bait = False, False
+        self.wait_eat, self.wait_bait = 0, 0
+        self.key_eating, self.key_bait = 'f2', 'f1'
+        self.i_click = 5
+
+
+    def catch(self):
+        time.sleep(0.1)
+        hook = cv2.imread('hook.png', 0)
+        hook_g = cv2.cvtColor(hook, cv2.COLOR_BAYER_BG2GRAY)
+        count_fail = 0
+
+        for i in range(1000):
+            if self.stop:
+                break
+
+            #
+            hook_screen = ImageGrab.grab(bbox=(*x0, *y0))
+            hook_screen.save('hook_screen.png')
+            hook_sc = cv2.imread('hook_screen.png', 0)
+
+            hook_sg = cv2.cvtColor(hook_sc, cv2.COLOR_BAYER_BG2GRAY)
+
+            res = cv2.matchTemplate(hook_sg, hook_g, cv2.TM_CCOEFF_NORMED)
+            loc = numpy.where(res >= 0.75)
+
+
+            try:
+                a = loc[-1][-1]
+                a -= 1
+                if a < 170:
+                    print(a)
+                    pyautogui.mouseDown(button='left')
+                else:
+                    pyautogui.mouseUp(button='left')
+                count_fail = 0
+            except:
+                pyautogui.mouseUp(button='left')
+                count_fail += 1
+                if count_fail >= 5:
+
+                    return
+
+            #
+
+    def eating(self, time_e,  first_time):
+        if self.eat and (time_e - first_time) > 30:
+            pyautogui.press(self.key_eating)
+            time.sleep(2)
+            return True
+        else:
+            return False
+
+    def baiting(self, time_b,  first_time):
+        if self.bait and (time_b - first_time) > 30:
+            pyautogui.press(self.key_eating)
+            time.sleep(2)
+            return True
+        else:
+            return False
+
+
+    def throw_a_hook(self, x, y):
+        pyautogui.moveTo(x, y)
+        pyautogui.mouseDown(button='left')
+        time.sleep(1)
+        pyautogui.mouseUp(button='left')
+
+    def wait(self):
+        keyboard.wait('l')
+        # print('нажал на л')
+        return pyautogui.position()
+
+    def cur_min(self):
+        x = datetime.datetime.now()
+
+        return x.hour * 60 + x.minute + x.year * 365 * 24 + x.day * 24 * 60
+
+    def click_on_hook(self, x, y):
+        zero_count = 0
+        i_click = 5
+
+        array = [numpy.mean(ImageGrab.grab(bbox=(x - self.hook_rad, y - self.hook_rad, x + self.hook_rad, y + self.hook_rad)))]
+
+        for i in range(1000):
+            if self.stop:
+                print('Вышел')
+                break
+
+            time.sleep(0.05)
+            clean_screen = ImageGrab.grab(bbox=(x - self.hook_rad, y - self.hook_rad, x + self.hook_rad, y + self.hook_rad))
+
+            mean = numpy.mean(clean_screen)
+            diff = abs(array[-1] - mean)
+            # print(round(diff, 3))
+
+            array.append(mean)
+
+            if diff >= i_click:
+                # print('нажал на крючок', diff)
+                pyautogui.click()
+                break
+
+            if diff < 0.1:  # Проверка на наличие крючка в воде
+                zero_count += 1
+            else:
+                zero_count = 0
+            if zero_count >= 10:
+                bool_repeat = True
+                break
+
+
+
+    def run(self):
+        #print('Плей пошел')
+        bool_repeat = False
+        eat_time = self.cur_min() - self.wait_eat
+        bait_time = self.cur_min() - self.wait_bait
+        coord0 = self.wait()
+        coord1 = self.wait()
+        self.wait()
+        #print('Прожал L')
+        time.sleep(0.1)
+        if bool_repeat:
+            bool_repeat = False
+
+        while True:
+            if self.stop:
+                break
+            current_time = self.cur_min()
+
+            bool_repeat = False
+            #print('Закидывает крючок')
+            self.throw_a_hook(*coord0)
+            if self.stop:
+                break
+            time.sleep(1.5)
+            #print('Ждет поклева')
+            self.click_on_hook(*coord1)
+            if self.stop:
+                break
+            if bool_repeat:
+                continue
+
+            time.sleep(0.1)
+
+            self.catch()
+            if self.stop:
+                break
+
+            time.sleep(3)
+
+
 def timer(f):
     def tmp(*args, **kwargs):
         t = time.time()
@@ -67,156 +221,9 @@ def timer(f):
     return tmp
 
 
-def eating(time_e ,eat,  first_time):
-    if eat and (time_e - first_time)>30:
-        pyautogui.press(key_eating)
-        time.sleep(2)
-        return True
-    else:
-        return False
-
-
-def baiting(time_b, bait, first_time):
-    if bait and (time_b - first_time) > 30:
-        pyautogui.press(key_eating)
-        time.sleep(2)
-        return True
-    else:
-        return False
-
-
-def cur_min():
-    x = datetime.datetime.now()
-
-    return x.hour * 60 + x.minute + x.year*365*24 + x.day * 24 * 60
-
-
-def play():
-
-    bool_repeat = False
-    eat_time = cur_min() - wait_eat
-    bait_time = cur_min() - wait_bait
-    coord0 = wait()
-    coord1 = wait()
-    wait()
-
-    time.sleep(0.1)
-    if bool_repeat:
-        bool_repeat = False
-
-    while True:
-        current_time = cur_min()
-
-
-        bool_repeat = False
-        print('Закидывает крючок')
-        throw_a_hook(*coord0)
-        time.sleep(1.5)
-        print('Ждет поклева')
-        click_on_hook(*coord1)
-        if bool_repeat:
-            continue
-
-        time.sleep(0.1)
-
-        catch()
-
-        
-        time.sleep(3)
-
-
-def catch():
-    time.sleep(0.1)
-    hook = cv2.imread('hook.png', 0)
-    hook_g = cv2.cvtColor(hook, cv2.COLOR_BAYER_BG2GRAY)
-    count_fail = 0
-
-    for i in range(1000):
-
-
-
-        #
-        hook_screen = ImageGrab.grab(bbox=(*x0, *y0))
-        hook_screen.save('hook_screen.png')
-        hook_sc = cv2.imread('hook_screen.png', 0)
-
-        hook_sg = cv2.cvtColor(hook_sc, cv2.COLOR_BAYER_BG2GRAY)
-
-        res = cv2.matchTemplate(hook_sg, hook_g, cv2.TM_CCOEFF_NORMED)
-        loc = numpy.where(res >= 0.70)
-        time.sleep(0.05)
-
-        try:
-            a = loc[-1][-1]
-            a -= 1
-            if a < 170:
-                pyautogui.mouseDown(button='left')
-            else:
-                pyautogui.mouseUp(button='left')
-            count_fail = 0
-        except:
-            pyautogui.mouseUp(button='left')
-            count_fail += 1
-            if count_fail >= 5:
-                print('Не поймал')
-                return
-
-        #
-
-
-def throw_a_hook(x, y):
-    pyautogui.moveTo(x, y)
-    pyautogui.mouseDown(button='left')
-    time.sleep(1)
-    pyautogui.mouseUp(button='left')
-
-
-def wait():
-    keyboard.wait('l')
-    #print('нажал на л')
-    return pyautogui.position()
-
-
-def click_on_hook(x, y):
-    zero_count = 0
-
-    array = [numpy.mean(ImageGrab.grab(bbox=(x - hook_rad, y - hook_rad, x + hook_rad, y + hook_rad)))]
-
-    for i in range(1000):
-
-        time.sleep(0.05)
-        clean_screen = ImageGrab.grab(bbox=(x - hook_rad, y - hook_rad, x + hook_rad, y + hook_rad))
-
-        mean = numpy.mean(clean_screen)
-        diff = abs(array[-1] - mean)
-        # print(round(diff, 3))
-
-        array.append(mean)
-
-        if diff >= i_click:
-            # print('нажал на крючок', diff)
-            pyautogui.click()
-            break
-
-        if diff < 0.1:  # Проверка на наличие крючка в воде
-            zero_count += 1
-        else:
-            zero_count = 0
-        if zero_count >= 10:
-            bool_repeat = True
-            break
 
 #######################################################################################################################
 
-
-class Creator(QtCore.QObject):
-    def __init__(self):
-        super().__init__()
-        self.isWork = False
-
-    def run(self):
-            while self.isWork:
-                play()
 
 
 class Ui(QtWidgets.QMainWindow, Form):
@@ -225,28 +232,23 @@ class Ui(QtWidgets.QMainWindow, Form):
         self.setupUi(self)
 
         self.thread = QtCore.QThread()
-        self.creator = Creator()
-
-
-        self.thread.finished.connect(self.StopPressed)
+        self.game = Game()
+        self.game.moveToThread(self.thread)
+        self.thread.started.connect(self.game.run)
 
         self.start.clicked.connect(self.StartPressed)
-
         self.stop.clicked.connect(self.StopPressed)
-
         self.settings.clicked.connect(self.ConfirmSettings)
 
 
     def StartPressed(self):
         try:
-
             self.stop.setEnabled(True)
             self.start.setEnabled(False)
-            self.creator.moveToThread(self.thread)
-            self.thread.started.connect(self.creator.run)
-            self.creator.isWork = True
+            self.game.moveToThread(self.thread)
+            self.thread.started.connect(self.game.run)
+
             self.thread.start()
-            print(self.thread.isFinished())
         except:
             print('ошибка старта')
 
@@ -255,36 +257,38 @@ class Ui(QtWidgets.QMainWindow, Form):
         try:
             self.start.setEnabled(True)
             self.stop.setEnabled(False)
-            self.creator.isWork = False
-            self.thread.started.disconnect(self.creator.run)
-
-
-            print(self.thread.isFinished())
+            self.game.stop = True
+            time.sleep(0.5)
 
         except:
             print('error stop')
 
 
-
-
     def ConfirmSettings(self):
-        global hook_rad, eating, bait, key_bait, key_eating
+        self.game.hook_rad = self.spinBox.value()
+        self.game.eat = self.eat.isChecked()
+        self.game.bait = self.bait.isChecked()
+        self.game.wait_eat = self.wait_eat.value()
+        self.game.wait_bait = self.wait_bait.value()
         self.lineEdit.setText('')
         if self.key_bait.toPlainText().lower() in key_array:
-            key_bait = self.key_bait.toPlainText().lower()
+            self.game.key_bait = self.key_bait.toPlainText().lower()
         else:
             self.lineEdit.setText(f'{self.key_bait.toPlainText()} не может быть клавишей; {self.lineEdit.text()}')
 
         if self.key_eat.toPlainText().lower() in key_array:
-            key_eating = self.key_eat.toPlainText().lower()
+            self.game.key_eating = self.key_eat.toPlainText().lower()
         else:
             self.lineEdit.setText(f'{self.key_eat.toPlainText()} не может быть клавишей; {self.lineEdit.text()}')
 
-        #print(key_bait, key_eating)
+        if self.tophint.isChecked():
+            self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
-        hook_rad = self.spinBox.value()
-        eating = self.eat.isChecked()
-        bait = self.bait.isChecked()
+        else:
+            self.setWindowFlags(QtCore.Qt.WindowMinimizeButtonHint)
+
+
+        self.show()
 
 
 
@@ -293,7 +297,6 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
 
     w = Ui()
-    w.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
     w.show()
 
 
