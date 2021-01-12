@@ -1,5 +1,4 @@
-import vk_api
-import tweepy
+
 
 
 def auth_handler():
